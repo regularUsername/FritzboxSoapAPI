@@ -1,4 +1,4 @@
-telegram_bot_token = "<token of your telegram bot"
+telegram_bot_token = "token of your telegram bot"
 telegram_chatid = "chat id for sending messages"
 
 fritzbox_user = "admin"
