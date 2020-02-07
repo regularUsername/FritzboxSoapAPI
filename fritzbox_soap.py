@@ -8,7 +8,8 @@ from bs4.element import Tag
 import settings
 
 session = requests.Session()
-session.auth = HTTPDigestAuth(settings.fritzbox_user, settings.fritzbox_password)
+session.auth = HTTPDigestAuth(
+    settings.fritzbox_user, settings.fritzbox_password)
 session.verify = settings.fritzbox_certificate
 
 
@@ -41,16 +42,23 @@ def soap_action(surl, sservice, saction, sarguments={}):
 
     return soup
 
-# soup = soap_action(
-#     surl="https://fritz.box:40888/tr064/upnp/control/hosts",
-#     sservice="urn:dslforum-org:service:Hosts:1",
-#     saction="X_AVM-DE_GetHostListPath"
-# )
 
-# hostlist_url = soup.find("newx_avm-de_hostlistpath").text
-# response = session.get("https://fritz.box:40888/tr064"+hostlist_url)
-# hostlist = Beautifulsoup(response.text,"lxml")
-# print(hostlist)
+def get_hostlist():
+    soup = soap_action(
+        surl="https://fritz.box:40888/tr064/upnp/control/hosts",
+        sservice="urn:dslforum-org:service:Hosts:1",
+        saction="X_AVM-DE_GetHostListPath"
+    )
+    hostlist_url = soup.find("NewX_AVM-DE_HostListPath").text
+    response = session.get("https://fritz.box:40888/tr064"+hostlist_url)
+    soup = BeautifulSoup(response.text, "lxml-xml")
+
+    hostlist = []
+    for item in soup.findAll("Item"):
+        hostlist.append(
+            {child.name: child.text for child in item.findChildren()})
+
+    return hostlist
 
 
 def get_host_by_mac(mac: str):
@@ -61,10 +69,9 @@ def get_host_by_mac(mac: str):
         sarguments={"NewMACAddress": mac}
     )
     # TODO error handling
-    host_entry = {x.name[3:]: x.text for x in soup.GetSpecificHostEntryResponse if (isinstance(x, Tag))}
+    host_entry = {x.name[3:]: x.text for x in soup.GetSpecificHostEntryResponse if ( isinstance(x, Tag))}
     return host_entry
 
 
 if __name__ == "__main__":
     print(get_host_by_mac(settings.mac_adress))
-    # print(get_host_by_mac("4C:66:41:62:7F:D4"))
