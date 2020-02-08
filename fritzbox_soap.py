@@ -8,8 +8,8 @@ from bs4.element import Tag
 import settings
 
 session = requests.Session()
-session.auth = HTTPDigestAuth(
-    settings.fritzbox_user, settings.fritzbox_password)
+session.auth = HTTPDigestAuth(settings.fritzbox_user,
+                              settings.fritzbox_password)
 session.verify = settings.fritzbox_certificate
 
 
@@ -28,13 +28,13 @@ s:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/">
 
 
 def soap_action(surl, sservice, saction, sarguments={}):
-    kopfzeilen = {
+    header = {
         'Content-Type': 'text/xml; charset="utf-8"',
         'SOAPACTION': f"{sservice}#{saction}"
     }
     response = session.post(
         url=surl,
-        headers=kopfzeilen,
+        headers=header,
         data=create_soap_request(saction, sservice, sarguments),
         timeout=31
     )
@@ -69,7 +69,8 @@ def get_host_by_mac(mac: str):
         sarguments={"NewMACAddress": mac}
     )
     # TODO error handling
-    host_entry = {x.name[3:]: x.text for x in soup.GetSpecificHostEntryResponse if ( isinstance(x, Tag))}
+    host_entry = {x.name[3:]: x.text for x in soup.GetSpecificHostEntryResponse
+                  if (isinstance(x, Tag))}
     return host_entry
 
 

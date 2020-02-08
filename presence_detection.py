@@ -1,5 +1,3 @@
-from pathlib import Path
-from math import ceil
 import datetime
 import simple_telegram
 
@@ -8,10 +6,11 @@ import fritzbox_soap
 
 import settings
 
+
 def main():
     laststate = None
     while True:
-        now = datetime.datetime.now().replace(second=0,microsecond=0)
+        now = datetime.datetime.now().replace(second=0, microsecond=0)
         try:
             hostEntry = fritzbox_soap.get_host_by_mac(settings.mac_adress)
             active = hostEntry['Active'] == '1'
@@ -22,11 +21,10 @@ def main():
             print(f"[{now}] FritzboxSoap: {e}")
             msg = ""
 
-
         if laststate != active:
             print(f"[{now}] {msg}       ")
         else:
-            print(f"[{now}] {msg}       ",end='\r') # nur carriage return um die zeile zu überschreiben beim nächstem print
+            print(f"[{now}] {msg}       ", end='\r')  # nur carriage return um die zeile zu überschreiben beim nächstem print
 
         if laststate is not None and laststate != active:
             simple_telegram.send_message(simple_telegram.telegram_chatid, msg)

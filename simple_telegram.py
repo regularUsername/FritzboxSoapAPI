@@ -1,15 +1,15 @@
 import requests
 from time import sleep
 
-from settings import telegram_bot_token, telegram_chatid
+from settings import telegram_token, telegram_chatid
 
 session = requests.Session()
 
 
 def send_message(chat_id, message):
-    for i in range(3):
+    for _ in range(3):
         try:
-            requests.post(f"https://api.telegram.org/bot{telegram_bot_token}/sendMessage",
+            requests.post(f"https://api.telegram.org/bot{telegram_token}/sendMessage",
                           data={"chat_id": chat_id, "text": message}, timeout=10)
             break
         except:
@@ -19,7 +19,7 @@ def send_message(chat_id, message):
 
 def get_updates():
     resp = session.get(
-        f"https://api.telegram.org/bot{telegram_bot_token}/getUpdates", timeout=10)
+        f"https://api.telegram.org/bot{telegram_token}/getUpdates", timeout=10)
     print(resp.json())
     return resp.json()
 

@@ -7,7 +7,8 @@ import settings
 
 session = requests.Session()
 
-session.auth = HTTPDigestAuth(settings.fritzbox_user, settings.fritzbox_password)
+session.auth = HTTPDigestAuth(settings.fritzbox_user,
+                              settings.fritzbox_password)
 session.verify = settings.fritzbox_certificate
 
 
