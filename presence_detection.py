@@ -8,28 +8,25 @@ import settings
 
 
 def main():
-    laststate = None
+    laststate = {k: None for k in settings.mac_adresses}
     while True:
-        now = datetime.datetime.now().replace(second=0, microsecond=0)
+        now = datetime.datetime.now().replace(microsecond=0)
         try:
-            hostEntry = fritzbox_soap.get_host_by_mac(settings.mac_adress)
-            active = hostEntry['Active'] == '1'
-            hostName = hostEntry['HostName']
-            msg = f"{hostName} {'verbunden' if active else 'getrennt'}"
+            hostlist = fritzbox_soap.get_hostlist()
+            for i in hostlist:
+                mac = i['MACAddress']
+                if mac in settings.mac_adresses:
+                    active = i['Active'] == '1'
+                    hostName = i['HostName']
+                    msg = f"{hostName} {'verbunden' if active else 'getrennt'}"
+                    if laststate[mac] is not None and laststate[mac] != active:
+                        print(f"[{now}] {msg}")
+                        simple_telegram.send_message( settings.telegram_chatid, msg)
+                    laststate[mac] = active
         except Exception as e:
-            active = laststate
             print(f"[{now}] FritzboxSoap: {e}")
             msg = ""
 
-        if laststate != active:
-            print(f"[{now}] {msg}       ")
-        else:
-            print(f"[{now}] {msg}       ", end='\r')  # nur carriage return um die zeile zu überschreiben beim nächstem print
-
-        if laststate is not None and laststate != active:
-            simple_telegram.send_message(simple_telegram.telegram_chatid, msg)
-
-        laststate = active
         sleep(300)
 
 
