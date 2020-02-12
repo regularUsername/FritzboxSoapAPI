@@ -3,6 +3,9 @@ from bs4.element import Tag
 import requests
 from requests.auth import HTTPDigestAuth
 
+from pathlib import Path
+import sys
+
 import settings
 
 session = requests.Session()
@@ -52,8 +55,28 @@ def get_service_actions(fritzboxurl, scpdurl):
     return actions
 
 
+# save all SCPD Files to "./SCPD_Files/"
+def dump_SCPD():
+    resp = session.get("https://fritz.box/tr064/tr64desc.xml")
+    soup = BeautifulSoup(resp.text, "lxml-xml")
+
+    p = Path("./SCPD_Files")
+    if not p.exists():
+        p.mkdir()
+    open("./SCPD_Files/tr64desc.xml", "w").write(soup.prettify())
+
+    for x in soup.findAll("SCPDURL"):
+        print(x.text)
+        resp = session.get("https://fritz.box/tr064"+x.text)
+        soup = BeautifulSoup(resp.text, "lxml-xml")
+        open("./SCPD_Files"+x.text, "w").write(soup.prettify())
+
+
 if __name__ == "__main__":
-    for x in discover_services("https://fritz.box"):
-        print(x)
-    # for x in get_service_actions("https://fritz.box","/timeSCPD.xml"):
-        # print(x)
+    # dump_SCPD()
+    if len(sys.argv) < 2:
+        for x in discover_services("https://fritz.box"):
+            print(f"service: {x['serviceType']:50} controlUrl: {x['controlURL']:35} scpdUrl: {x['SCPDURL']}")
+    else:
+        for x in get_service_actions("https://fritz.box", f"/{sys.argv[1]}.xml"):
+            print(x)

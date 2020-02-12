@@ -21,7 +21,7 @@ def main():
                     msg = f"{hostName} {'verbunden' if active else 'getrennt'}"
                     if laststate[mac] is not None and laststate[mac] != active:
                         print(f"[{now}] {msg}")
-                        simple_telegram.send_message( settings.telegram_chatid, msg)
+                        simple_telegram.send_message(settings.telegram_chatid, msg)
                     laststate[mac] = active
         except Exception as e:
             print(f"[{now}] FritzboxSoap: {e}")

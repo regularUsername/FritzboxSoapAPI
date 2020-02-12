@@ -12,6 +12,8 @@ session.auth = HTTPDigestAuth(settings.fritzbox_user,
                               settings.fritzbox_password)
 session.verify = settings.fritzbox_certificate
 
+BASE_URL = "https://fritz.box:40888/tr064"
+
 
 def create_soap_request(saction, sservice, arguments={}):
     argtags = ""
@@ -45,12 +47,12 @@ def soap_action(surl, sservice, saction, sarguments={}):
 
 def get_hostlist():
     soup = soap_action(
-        surl="https://fritz.box:40888/tr064/upnp/control/hosts",
+        surl=BASE_URL+"/upnp/control/hosts",
         sservice="urn:dslforum-org:service:Hosts:1",
         saction="X_AVM-DE_GetHostListPath"
     )
     hostlist_url = soup.find("NewX_AVM-DE_HostListPath").text
-    response = session.get("https://fritz.box:40888/tr064"+hostlist_url)
+    response = session.get(BASE_URL+hostlist_url)
     soup = BeautifulSoup(response.text, "lxml-xml")
 
     hostlist = []
@@ -63,7 +65,7 @@ def get_hostlist():
 
 def get_host_by_mac(mac: str):
     soup = soap_action(
-        surl="https://fritz.box:40888/tr064/upnp/control/hosts",
+        surl=BASE_URL+"/upnp/control/hosts",
         sservice="urn:dslforum-org:service:Hosts:1",
         saction="GetSpecificHostEntry",
         sarguments={"NewMACAddress": mac}
@@ -75,4 +77,4 @@ def get_host_by_mac(mac: str):
 
 
 if __name__ == "__main__":
-    print(get_host_by_mac(settings.mac_adress))
+    print(get_host_by_mac(settings.mac_adresses[0]))
