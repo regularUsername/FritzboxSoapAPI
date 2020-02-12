@@ -27,7 +27,7 @@ def discover_services(fritzbox_url):
 
     # versteht kein mensch
     services = [{x.name: x.text for x in service if isinstance(x, Tag)}
-                for service in soup.serviceList if isinstance(service, Tag)]
+                for service in soup.findAll('service') if isinstance(service, Tag)]
     return services
 
 
@@ -76,7 +76,7 @@ if __name__ == "__main__":
     # dump_SCPD()
     if len(sys.argv) < 2:
         for x in discover_services("https://fritz.box"):
-            print(f"service: {x['serviceType']:50} controlUrl: {x['controlURL']:35} scpdUrl: {x['SCPDURL']}")
+            print(f"service: {x['serviceType']:55} controlUrl: {x['controlURL']:35} scpdUrl: {x['SCPDURL']}")
     else:
         for x in get_service_actions("https://fritz.box", f"/{sys.argv[1]}.xml"):
             print(x)
