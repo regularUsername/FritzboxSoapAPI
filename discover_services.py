@@ -66,7 +66,6 @@ def dump_SCPD():
     open("./SCPD_Files/tr64desc.xml", "w").write(soup.prettify())
 
     for x in soup.findAll("SCPDURL"):
-        print(x.text)
         resp = session.get("https://fritz.box/tr064"+x.text)
         soup = BeautifulSoup(resp.text, "lxml-xml")
         open("./SCPD_Files"+x.text, "w").write(soup.prettify())

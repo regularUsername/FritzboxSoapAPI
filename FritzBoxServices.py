@@ -1,12 +1,17 @@
 from pathlib import Path
 from bs4 import BeautifulSoup, Tag
 from fritzbox_soap import soap_action
+from discover_services import dump_SCPD
 
 
 class Services:
     def __init__(self):
         self._baseURL = "https://fritz.box:40888/tr064"
-        with Path("./SCPD_Files/tr64desc.xml").open("r") as fp:
+        p = Path("./SCPD_Files/tr64desc.xml")
+        if not p.exists():
+            print("downloading scpd files")
+            dump_SCPD()
+        with p.open("r") as fp:
             soup = BeautifulSoup(fp.read(), "lxml-xml")
 
         self._services = {}
@@ -20,10 +25,10 @@ class Services:
     def __getattr__(self, name):
         if name in self._services.keys():
             service = self._services[name]
-            return Service(name,
-                           service['serviceType'],
-                           self._baseURL+service['controlURL'],
-                           service['SCPDURL'])
+            return _Service(name,
+                            service['serviceType'],
+                            self._baseURL+service['controlURL'],
+                            service['SCPDURL'])
         raise AttributeError(f"'Services' object has no attribute '{name}'")
 
     def listServices(self):
@@ -44,7 +49,7 @@ class Services:
         raise ValueError('bad method')
 
 
-class Service:
+class _Service:
     def __init__(self, name, serviceType, controlURL, scpdUrl):
         self._serviceName = name
         self._serviceType = serviceType
@@ -72,12 +77,15 @@ class Service:
             action = self._actions[name]
 
             def f(**kwargs):
+
+                # check args before request or not ?
                 soap = soap_action(self._controlURL,
                                    self._serviceType,
                                    action['name'],
                                    kwargs)
 
-                #TODO parse soap response and return results as dict
+                # TODO parse soap response and return results as dict
+                # TODO raise exception on upnp error
                 return soap
 
             return f
@@ -114,4 +122,4 @@ if __name__ == "__main__":
     print(services.serviceInfo('Homeauto'))
     print(services.Homeauto.listMethods())
     print(services.Homeauto.methodHelp('GetGenericDeviceInfos'))
-    # print(services.Homeauto.GetGenericDeviceInfos(NewIndex=0))
+    print(services.Homeauto.GetGenericDeviceInfos(NewIndex=0))
