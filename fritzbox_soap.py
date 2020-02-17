@@ -42,11 +42,11 @@ def soap_action(surl, sservice, saction, sarguments={}):
     )
     soup = BeautifulSoup(response.text, "lxml-xml")
 
-    return soup
+    return (response.status_code, soup)
 
 
 def get_hostlist():
-    soup = soap_action(
+    _, soup = soap_action(
         surl=BASE_URL+"/upnp/control/hosts",
         sservice="urn:dslforum-org:service:Hosts:1",
         saction="X_AVM-DE_GetHostListPath"
@@ -64,7 +64,7 @@ def get_hostlist():
 
 
 def get_host_by_mac(mac: str):
-    soup = soap_action(
+    _, soup = soap_action(
         surl=BASE_URL+"/upnp/control/hosts",
         sservice="urn:dslforum-org:service:Hosts:1",
         saction="GetSpecificHostEntry",

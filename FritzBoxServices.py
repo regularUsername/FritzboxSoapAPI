@@ -14,13 +14,14 @@ class Services:
         with p.open("r") as fp:
             soup = BeautifulSoup(fp.read(), "lxml-xml")
 
-        self._services = {}
+        d = {}
         for service in soup.findAll('service'):
             if isinstance(service, Tag):
                 name = service.serviceType.text.split(':')[-2]
                 friendlyName = name.replace('X_AVM-DE_', '')
-                self._services[friendlyName] = {x.name: x.text.strip()
-                                                for x in service if isinstance(x, Tag)}
+                d[friendlyName] = {x.name: x.text.strip()
+                                   for x in service if isinstance(x, Tag)}
+        self._services = d
 
     def __getattr__(self, name):
         if name in self._services.keys():
@@ -79,14 +80,25 @@ class _Service:
             def f(**kwargs):
 
                 # check args before request or not ?
-                soap = soap_action(self._controlURL,
-                                   self._serviceType,
-                                   action['name'],
-                                   kwargs)
+                status, soup = soap_action(self._controlURL,
+                                           self._serviceType,
+                                           action['name'],
+                                           kwargs)
+                if status >= 500:
+                    code = soup.find("errorCode").text
+                    desc = soup.find("errorDescription").text
+                    raise Exception(f"UPnPError({code}): {desc}")
 
-                # TODO parse soap response and return results as dict
-                # TODO raise exception on upnp error
-                return soap
+                response = soup.find(f"u:{action['name']}Response")
+                retVals = {}
+                for x in response.children:
+                    if isinstance(x, Tag):
+                        if x.text.isnumeric():
+                            retVals[x.name] = int(x.text)
+                        else:
+                            retVals[x.name] = x.text
+
+                return retVals
 
             return f
 
@@ -98,10 +110,6 @@ class _Service:
 
     def listMethods(self):
         return list(self._actions.keys())
-
-    # wie in https://docs.python.org/3/library/xmlrpc.client.html#serverproxy-objects ?
-    def methodSignature(self, name):
-        raise NotImplementedError
 
     def methodHelp(self, name):
         if name in self._actions.keys():
@@ -118,8 +126,9 @@ class _Service:
 
 if __name__ == "__main__":
     services = Services()
-    print(services.listServices())
-    print(services.serviceInfo('Homeauto'))
-    print(services.Homeauto.listMethods())
+    # print(services.listServices())
+    # print(services.serviceInfo('Homeauto'))
+    # print(services.Homeauto.listMethods())
     print(services.Homeauto.methodHelp('GetGenericDeviceInfos'))
+    print()
     print(services.Homeauto.GetGenericDeviceInfos(NewIndex=0))
