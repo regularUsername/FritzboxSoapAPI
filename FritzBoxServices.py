@@ -48,7 +48,6 @@ class Services:
             soup = BeautifulSoup(resp.text, "lxml-xml")
             open("./SCPD_Files"+x.text, "w").write(soup.prettify())
 
-
     def __getattr__(self, name):
         if name in self._services.keys():
             return _Service(self, name)
@@ -77,10 +76,11 @@ class _Service:
         self._serviceName = name
         # self._parent = parent
         self._session = parent._session
+        self._baseUrl = parent._baseURL
 
         s = parent._services[name]
         self._serviceType = s['serviceType']
-        self._controlURL = parent._baseURL+s['controlURL']
+        self._controlURL = self._baseUrl+s['controlURL']
 
         with Path("./SCPD_Files"+s['SCPDURL']).open('r') as fp:
             soup = BeautifulSoup(fp.read(), "lxml-xml")
@@ -151,12 +151,29 @@ s:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/">
                         else:
                             retVals[x.name] = x.text
 
+                if len(retVals) == 1:
+                    return list(retVals.values())[0]
+
                 return retVals
 
             return f
 
         s = f"'{self._serviceName}-Service' object has no attribute '{name}'"
         raise AttributeError(s)
+
+    def getList(self, listPath):
+        hostlistUrl = self._baseUrl+listPath
+        response = self._session.get(hostlistUrl)
+        soup = BeautifulSoup(response.text, "lxml-xml")
+
+        items = []
+        for item in soup.List:
+            if isinstance(item, Tag):
+                items.append(
+                    {child.name: child.text
+                        for child in item if isinstance(child, Tag)}
+                )
+        return items
 
     def __repr__(self):
         return f"<class 'Service: {self._serviceName}>"
@@ -181,9 +198,7 @@ if __name__ == "__main__":
     services = Services(settings.fritzbox_user,
                         settings.fritzbox_password,
                         settings.fritzbox_certificate)
-    # print(services.listServices())
-    # print(services.serviceInfo('Homeauto'))
-    # print(services.Homeauto.listMethods())
-    print(services.Homeauto.methodHelp('GetGenericDeviceInfos'))
+    print(services.listServices())
     print()
-    print(services.Homeauto.GetGenericDeviceInfos(NewIndex=0))
+    u = services.Hosts.GetHostListPath()
+    print(services.Hosts.getList(u))
