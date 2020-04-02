@@ -2,17 +2,21 @@ import datetime
 import simple_telegram
 
 from time import sleep
-import fritzbox_soap
+from FritzBoxServices import Services
 
 import settings
 
 
 def main():
     laststate = {k: None for k in settings.mac_adresses}
+    services = Services(settings.fritzbox_user,
+                        settings.fritzbox_password,
+                        settings.fritzbox_certificate)
     while True:
         now = datetime.datetime.now().replace(microsecond=0)
         try:
-            hostlist = fritzbox_soap.get_hostlist()
+            p = services.Hosts.GetHostListPath()
+            hostlist = services.Hosts.getList(p)
             for i in hostlist:
                 mac = i['MACAddress']
                 if mac in settings.mac_adresses:
