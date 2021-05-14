@@ -11,7 +11,7 @@ class Services:
                  password,
                  certificate=None,
                  fritzboxUrl="https://fritz.box"):
-        self._baseURL = fritzboxUrl.rstrip('/')+":40888/tr064"
+        self._baseURL = fritzboxUrl.rstrip('/')+"/tr064"
         self._session = requests.Session()
 
         self._session.auth = HTTPDigestAuth(user, password)
