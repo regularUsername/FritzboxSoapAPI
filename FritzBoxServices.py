@@ -2,7 +2,6 @@ from pathlib import Path
 from bs4 import BeautifulSoup, Tag
 import requests
 from requests.auth import HTTPDigestAuth
-import settings
 
 
 class Services:
@@ -192,13 +191,3 @@ s:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/">
             return s
 
         raise ValueError('bad method')
-
-
-if __name__ == "__main__":
-    services = Services(settings.fritzbox_user,
-                        settings.fritzbox_password,
-                        settings.fritzbox_certificate)
-    print(services.listServices())
-    print()
-    u = services.Hosts.GetHostListPath()
-    print(services.Hosts.getList(u))

@@ -2,6 +2,7 @@ import datetime
 import simple_telegram
 
 from time import sleep
+import context
 from FritzBoxServices import Services
 
 import settings

@@ -1,7 +1,7 @@
 telegram_token = "token of your telegram bot"
 telegram_chatid = "chat id for sending messages"
 
-fritzbox_user = "admin"
+fritzbox_user = "admin account username"
 fritzbox_password = "your fritzbox password"
 
 # path to the certificate file for your fritzbox (public key)
