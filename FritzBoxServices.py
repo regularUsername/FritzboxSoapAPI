@@ -110,6 +110,7 @@ class _Service:
             data=self._create_soap_request(saction, sservice, sarguments),
             timeout=31
         )
+        response.raise_for_status()
         soup = BeautifulSoup(response.text, "lxml-xml")
 
         return (response.status_code, soup)
