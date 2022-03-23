@@ -1,7 +1,7 @@
-import context
-from FritzBoxServices import Services
+from FritzboxSoapAPI import Services
 
 import settings
+
 
 def main():
     services = Services(settings.fritzbox_user,
@@ -10,8 +10,8 @@ def main():
     print(services.listServices())
     print()
     u = services.Hosts.GetHostListPath()
-    hostList = services.Hosts.getList(u)
-    hostnames = [x["HostName"] for x in hostList]
+    hostlist = services.Hosts.getList(u)
+    hostnames = [x["HostName"] for x in hostlist]
     print(hostnames)
 
 

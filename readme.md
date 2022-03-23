@@ -2,7 +2,7 @@
 
 Begin by importing Services and creating an instance of it with your FritzBox credentials.
 ```python
->>> from FritzBoxServices import Services
+>>> from FritzboxSoapAPI import Services
 >>> s = Services("username", "password")
 ```
 
@@ -11,6 +11,8 @@ Begin by importing Services and creating an instance of it with your FritzBox cr
 Use .listServices() to get a list of available services in the API.
 ```python
 >>> s.listServices()
+```
+```
 ['DeviceInfo',
  'DeviceConfig',
  'Hosts'
@@ -21,6 +23,8 @@ Use .listServices() to get a list of available services in the API.
 Use .listMethod() on a service to get all methods of that service.
 ```python
 >>> s.Hosts.listMethods()
+```
+```
 ['GetHostNumberOfEntries',
  'GetSpecificHostEntry',
  'GetGenericHostEntry',
@@ -31,7 +35,8 @@ Use .listMethod() on a service to get all methods of that service.
 Get signature of specific method in a service with .methodHelp("methodname").
 ```python
 >>> s.Hosts.methodHelp("GetSpecificHostEntry")
-
+```
+```
 GetSpecificHostEntry
 
 :param NewMACAddress
@@ -42,6 +47,8 @@ GetSpecificHostEntry
 Parameters must be passed as keyword arguments.
 ```python
 >>> s.Hosts.GetSpecificHostEntry(NewMACAddress="11:22:33:AA:BB:CC")
+```
+```
 {'NewIPAddress': '192.168.0.1',
  'NewAddressSource': 'DHCP',
  'NewLeaseTimeRemaining': 0,

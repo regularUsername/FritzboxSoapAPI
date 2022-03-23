@@ -9,8 +9,10 @@ session = requests.Session()
 def send_message(chat_id, message):
     for _ in range(3):
         try:
-            requests.post(f"https://api.telegram.org/bot{telegram_token}/sendMessage",
-                          data={"chat_id": chat_id, "text": message}, timeout=10)
+            requests.post(
+                f"https://api.telegram.org/bot{telegram_token}/sendMessage",
+                data={"chat_id": chat_id, "text": message}, timeout=10
+                )
             break
         except:
             print("Telegram sendMessage Failed, trying again")

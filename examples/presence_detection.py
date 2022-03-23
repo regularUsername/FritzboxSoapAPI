@@ -2,8 +2,7 @@ import datetime
 import simple_telegram
 
 from time import sleep
-import context
-from FritzBoxServices import Services
+from FritzboxSoapAPI import Services
 
 import settings
 
@@ -22,8 +21,8 @@ def main():
                 mac = i['MACAddress']
                 if mac in settings.mac_adresses:
                     active = i['Active'] == '1'
-                    hostName = i['HostName']
-                    msg = f"{hostName} {'verbunden' if active else 'getrennt'}"
+                    hostname = i['HostName']
+                    msg = f"{hostname} {'verbunden' if active else 'getrennt'}"
                     if laststate[mac] is not None and laststate[mac] != active:
                         print(f"[{now}] {msg}")
                         simple_telegram.send_message(settings.telegram_chatid, msg)

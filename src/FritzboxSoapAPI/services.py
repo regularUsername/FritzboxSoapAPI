@@ -9,8 +9,8 @@ class Services:
                  user,
                  password,
                  certificate=None,
-                 fritzboxUrl="https://fritz.box"):
-        self._baseURL = fritzboxUrl.rstrip('/')+"/tr064"
+                 fritzbox_url="https://fritz.box"):
+        self._baseURL = fritzbox_url.rstrip('/')+"/tr064"
         self._session = requests.Session()
 
         self._session.auth = HTTPDigestAuth(user, password)
@@ -19,7 +19,7 @@ class Services:
         p = Path("./SCPD_Files/tr64desc.xml")
         if not p.exists():
             print("downloading scpd files")
-            self._dump_SCPD()
+            self._dump_scpd()
 
         with p.open("r") as fp:
             soup = BeautifulSoup(fp.read(), "lxml-xml")
@@ -28,12 +28,12 @@ class Services:
         for service in soup.findAll('service'):
             if isinstance(service, Tag):
                 name = service.serviceType.text.split(':')[-2]
-                friendlyName = name.replace('X_AVM-DE_', '')
-                d[friendlyName] = {x.name: x.text.strip()
-                                   for x in service if isinstance(x, Tag)}
+                friendly_name = name.replace('X_AVM-DE_', '')
+                d[friendly_name] = {x.name: x.text.strip()
+                                    for x in service if isinstance(x, Tag)}
         self._services = d
 
-    def _dump_SCPD(self):
+    def _dump_scpd(self):
         resp = self._session.get(self._baseURL+"/tr64desc.xml")
         soup = BeautifulSoup(resp.text, "lxml-xml")
 
@@ -48,7 +48,7 @@ class Services:
             open("./SCPD_Files"+x.text, "w").write(soup.prettify())
 
     def __getattr__(self, name):
-        if name in self._services.keys():
+        if name in self._services:
             return _Service(self, name)
         raise AttributeError(f"'Services' object has no attribute '{name}'")
 
@@ -56,7 +56,7 @@ class Services:
         return list(self._services.keys())
 
     def serviceInfo(self, name):
-        if name in self._services.keys():
+        if name in self._services:
             s = self._services[name]
             ret = f"""Service: {name}
     service type:   '{s['serviceType']}'
@@ -72,14 +72,14 @@ class Services:
 
 class _Service:
     def __init__(self, parent, name):
-        self._serviceName = name
+        self._service_name = name
         # self._parent = parent
         self._session = parent._session
-        self._baseUrl = parent._baseURL
+        self._base_url = parent._baseURL
 
         s = parent._services[name]
-        self._serviceType = s['serviceType']
-        self._controlURL = self._baseUrl+s['controlURL']
+        self._service_type = s['serviceType']
+        self._control_url = self._base_url+s['controlURL']
 
         with Path("./SCPD_Files"+s['SCPDURL']).open('r') as fp:
             soup = BeautifulSoup(fp.read(), "lxml-xml")
@@ -87,7 +87,7 @@ class _Service:
         self._actions = {}
         for action in soup.findAll('action'):
             name = action.findChild('name').text.strip()
-            friendlyName = name.replace('X_AVM-DE_', '')
+            friendlyname = name.replace('X_AVM-DE_', '')
             args = []
             returnvalues = []
             for argument in action.findAll('argument'):
@@ -96,7 +96,7 @@ class _Service:
                     returnvalues.append(argname)
                 else:
                     args.append(argname)
-            self._actions[friendlyName] = {
+            self._actions[friendlyname] = {
                 'name': name, 'arguments': args, 'returnvalues': returnvalues}
 
     def _soap_action(self, surl, sservice, saction, sarguments={}):
@@ -129,12 +129,12 @@ s:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/">
 </s:Envelope>'''.encode('utf-8')
 
     def __getattr__(self, name):
-        if name in self._actions.keys():
+        if name in self._actions:
             action = self._actions[name]
 
             def f(**kwargs):
-                status, soup = self._soap_action(self._controlURL,
-                                                 self._serviceType,
+                status, soup = self._soap_action(self._control_url,
+                                                 self._service_type,
                                                  action['name'],
                                                  kwargs)
                 if status >= 500:
@@ -143,27 +143,27 @@ s:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/">
                     raise Exception(f"UPnPError({code}): {desc}")
 
                 response = soup.find(f"u:{action['name']}Response")
-                retVals = {}
+                ret = {}
                 for x in response.children:
                     if isinstance(x, Tag):
                         if x.text.isnumeric():
-                            retVals[x.name] = int(x.text)
+                            ret[x.name] = int(x.text)
                         else:
-                            retVals[x.name] = x.text
+                            ret[x.name] = x.text
 
-                if len(retVals) == 1:
-                    return list(retVals.values())[0]
+                if len(ret) == 1:
+                    return list(ret.values())[0]
 
-                return retVals
+                return ret
 
             return f
 
-        s = f"'{self._serviceName}-Service' object has no attribute '{name}'"
+        s = f"'{self._service_name}-Service' object has no attribute '{name}'"
         raise AttributeError(s)
 
-    def getList(self, listPath):
-        hostlistUrl = self._baseUrl+listPath
-        response = self._session.get(hostlistUrl)
+    def getList(self, listpath):
+        hostlisturl = self._base_url+listpath
+        response = self._session.get(hostlisturl)
         soup = BeautifulSoup(response.text, "lxml-xml")
 
         items = []
@@ -176,13 +176,13 @@ s:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/">
         return items
 
     def __repr__(self):
-        return f"<class 'Service: {self._serviceName}>"
+        return f"<class 'Service: {self._service_name}>"
 
     def listMethods(self):
         return list(self._actions.keys())
 
     def methodHelp(self, name):
-        if name in self._actions.keys():
+        if name in self._actions:
             s = f"{name}\n\n"
             for x in self._actions[name]['arguments']:
                 s += f":param {x}\n"
