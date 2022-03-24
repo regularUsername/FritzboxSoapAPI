@@ -6,32 +6,29 @@ from requests.auth import HTTPDigestAuth
 
 class Services:
     def __init__(self,
-                 user,
-                 password,
-                 certificate=None,
-                 fritzbox_url="https://fritz.box"):
+                 user: str,
+                 password: str,
+                 certificate: str = None,
+                 fritzbox_url: str = "https://fritz.box"):
         self._baseURL = fritzbox_url.rstrip('/')+"/tr064"
         self._session = requests.Session()
 
         self._session.auth = HTTPDigestAuth(user, password)
         self._session.verify = certificate
+        self._scpd = {}
 
-        p = Path("./SCPD_Files/tr64desc.xml")
-        if not p.exists():
-            print("downloading scpd files")
-            self._dump_scpd()
+        resp = self._session.get(self._baseURL+"/tr64desc.xml")
+        resp.raise_for_status()
+        soup = BeautifulSoup(resp.text, "lxml-xml")
 
-        with p.open("r") as fp:
-            soup = BeautifulSoup(fp.read(), "lxml-xml")
-
-        d = {}
+        self._services = {}
         for service in soup.findAll('service'):
             if isinstance(service, Tag):
                 name = service.serviceType.text.split(':')[-2]
-                friendly_name = name.replace('X_AVM-DE_', '')
-                d[friendly_name] = {x.name: x.text.strip()
-                                    for x in service if isinstance(x, Tag)}
-        self._services = d
+                shortname = name.replace('X_AVM-DE_', '')
+                self._services[shortname] = {
+                    x.name: x.text.strip()
+                    for x in service if isinstance(x, Tag)}
 
     def _dump_scpd(self):
         resp = self._session.get(self._baseURL+"/tr64desc.xml")
@@ -43,7 +40,7 @@ class Services:
         open("./SCPD_Files/tr64desc.xml", "w").write(soup.prettify())
 
         for x in soup.findAll("SCPDURL"):
-            resp = self._session.get("https://fritz.box/tr064"+x.text)
+            resp = self._session.get(self._baseURL+x.text)
             soup = BeautifulSoup(resp.text, "lxml-xml")
             open("./SCPD_Files"+x.text, "w").write(soup.prettify())
 
@@ -71,33 +68,38 @@ class Services:
 
 
 class _Service:
-    def __init__(self, parent, name):
+    def __init__(self, parent: Services, name):
         self._service_name = name
-        # self._parent = parent
         self._session = parent._session
         self._base_url = parent._baseURL
+        self._actions = {}
 
         s = parent._services[name]
         self._service_type = s['serviceType']
         self._control_url = self._base_url+s['controlURL']
 
-        with Path("./SCPD_Files"+s['SCPDURL']).open('r') as fp:
-            soup = BeautifulSoup(fp.read(), "lxml-xml")
+        # cache scpd data in parent class
+        if name in parent._scpd:
+            self._actions = parent._scpd[name]
+        else:
+            resp = self._session.get(
+                self._base_url+parent._services[name]["SCPDURL"])
+            soup = BeautifulSoup(resp.text, "lxml-xml")
 
-        self._actions = {}
-        for action in soup.findAll('action'):
-            name = action.findChild('name').text.strip()
-            friendlyname = name.replace('X_AVM-DE_', '')
-            args = []
-            returnvalues = []
-            for argument in action.findAll('argument'):
-                argname = argument.findChild('name').text.strip()
-                if argument.direction.text.strip() == 'out':
-                    returnvalues.append(argname)
-                else:
-                    args.append(argname)
-            self._actions[friendlyname] = {
-                'name': name, 'arguments': args, 'returnvalues': returnvalues}
+            for a in soup.findAll('action'):
+                aname = a.findChild('name').text.strip()
+                shortname = aname.replace('X_AVM-DE_', '')
+                args = []
+                retvals = []
+                for argument in a.findAll('argument'):
+                    argname = argument.findChild('name').text.strip()
+                    if argument.direction.text.strip() == 'out':
+                        retvals.append(argname)
+                    else:
+                        args.append(argname)
+                self._actions[shortname] = {
+                    'name': aname, 'arguments': args, 'returnvalues': retvals}
+            parent._scpd[name] = self._actions
 
     def _soap_action(self, surl, sservice, saction, sarguments={}):
         header = {
@@ -165,6 +167,7 @@ s:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/">
         hostlisturl = self._base_url+listpath
         response = self._session.get(hostlisturl)
         soup = BeautifulSoup(response.text, "lxml-xml")
+        response.raise_for_status()
 
         items = []
         for item in soup.List:
