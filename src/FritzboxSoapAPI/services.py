@@ -112,10 +112,14 @@ class _Service:
             data=self._create_soap_request(saction, sservice, sarguments),
             timeout=31
         )
-        response.raise_for_status()
         soup = BeautifulSoup(response.text, "lxml-xml")
+        if response.status_code >= 500:
+            code = soup.find("errorCode").text
+            desc = soup.find("errorDescription").text
+            raise Exception(f"UPnPError({code}): {desc}")
+        response.raise_for_status()
 
-        return (response.status_code, soup)
+        return soup
 
     def _create_soap_request(self, saction, sservice, arguments={}):
         argtags = ""
@@ -135,14 +139,10 @@ s:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/">
             action = self._actions[name]
 
             def f(**kwargs):
-                status, soup = self._soap_action(self._control_url,
-                                                 self._service_type,
-                                                 action['name'],
-                                                 kwargs)
-                if status >= 500:
-                    code = soup.find("errorCode").text
-                    desc = soup.find("errorDescription").text
-                    raise Exception(f"UPnPError({code}): {desc}")
+                soup = self._soap_action(self._control_url,
+                                         self._service_type,
+                                         action['name'],
+                                         kwargs)
 
                 response = soup.find(f"u:{action['name']}Response")
                 ret = {}
