@@ -1,0 +1,21 @@
+[build-system]
+requires = [ "hatchling>=1.9.0"]
+build-backend = "hatchling.build"
+
+[project]
+name = "FritzboxSoapAPI"
+version = "0.0.1"
+readme = "readme.md"
+license = ""
+requires-python = ">=3.6"
+dependencies = [
+    "beautifulsoup4",
+    "Jinja2",
+    "lxml",
+    "requests",
+]
+
+[tool.hatch.build]
+sources = [
+    "src",
+]
