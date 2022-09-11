@@ -19,3 +19,6 @@ dependencies = [
 sources = [
     "src",
 ]
+
+[project.scripts]
+fritzboxsoap_stubgen = "FritzboxSoapAPI.stubgen:run"

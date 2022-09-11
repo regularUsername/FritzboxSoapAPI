@@ -1,3 +1,4 @@
+import argparse
 from jinja2 import Environment, FileSystemLoader
 from pathlib import Path
 from bs4 import BeautifulSoup, Tag
@@ -36,6 +37,7 @@ def parse_tr64desc(markup):
                                for x in service if isinstance(x, Tag)}
     return d
 
+
 def stub_generator(user: str,
                    password: str,
                    certificate: str = None,
@@ -49,7 +51,7 @@ def stub_generator(user: str,
     resp = session.get(base_url+"/tr64desc.xml")
     resp.raise_for_status()
     services = parse_tr64desc(resp.text)
-    for _,v in services.items():
+    for _, v in services.items():
         resp = session.get(base_url+v['SCPDURL'])
         resp.raise_for_status()
         v['actions'] = parseSCPD(resp.text)
@@ -60,5 +62,32 @@ def stub_generator(user: str,
 
     template = env.get_template('ServiceTemplate.py')
 
-    with Path(output_path+"Services.py", encoding="utf-8").open('w') as fp:
+    p = Path(output_path, encoding="utf-8")
+    if p.is_dir():
+        p = p.joinpath("Services.py")
+    with p.open('w') as fp:
         fp.write(template.render(services=services))
+
+
+def run():
+    parser = argparse.ArgumentParser(
+        description='Generate stubs for the FritzBox SOAP API')
+    parser.add_argument('-u', '--user', required=True, help="Admin Username")
+    parser.add_argument('-p', '--password', required=True,
+                        help="Admin Password")
+    parser.add_argument('--cert', dest='certificate',
+                        help="Path to public key of the FritzBox for verification (optional)")
+    parser.add_argument('--output', dest='output_path', default='./',
+                        help="Output Directory or File, default name is Services.py (optional)")
+    parser.add_argument('--url', dest='fritzbox_url', default='https://fritz.box',
+                        help='Url to the FritzBox, default is "https://fritz.box" (optional)')
+    args = parser.parse_args()
+    p = Path(args.output_path)
+    if not p.is_dir() and p.suffix != '.py':
+        print("invalid output_path, must be a valid directory or filename ending with .py")
+        return
+    stub_generator(**vars(args))
+
+
+if __name__ == "__main__":
+    run()
