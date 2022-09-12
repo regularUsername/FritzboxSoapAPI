@@ -7,6 +7,7 @@ import requests
 from requests.auth import HTTPDigestAuth
 from bs4 import BeautifulSoup, Tag
 
+
 class _ServiceBase():
     def __init__(self,
                  user,
@@ -18,7 +19,6 @@ class _ServiceBase():
         self._session.auth = HTTPDigestAuth(user, password)
         self._session.verify = certificate
         self._baseURL = fritzbox_url.rstrip('/')+"/tr064"
-
 
     def _parse_response(self, resp):
         retVals = {}
@@ -85,12 +85,12 @@ s:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/">
 {% for sname,sdesc in services.items() %}
 class {{ sname }}(_ServiceBase):
 {% for aname,action in sdesc.actions.items() %}
-    def {{ aname }}(self, {{action.arguments|join(', ')}}):
+    def {{ aname }}(self, {{action.arguments|join(', ')|replace('-','_')}}):
         '''
             Parameters:
                     {% if action.arguments -%}
                     {% for a in action.arguments -%}
-                    {{ a }}
+                    {{ a|replace('-','_') }}
                     {% endfor -%}
                     {% else -%}
                     None
@@ -107,18 +107,18 @@ class {{ sname }}(_ServiceBase):
         {% if action.arguments -%}
         kwargs = {
         {%- for x in action.arguments %}
-        "{{x}}": {{x}}, 
-        {%- endfor -%}
+        "{{x}}": {{x|replace('-','_')}}, 
+        {% endfor -%}
         }
         {%- else -%}
         kwargs = {}
         {%- endif %}
         soup = self._soap_action(self._baseURL+"{{sdesc.controlURL}}",
                                  "{{sdesc.serviceType}}",
-                                 "{{ aname }}",
+                                 "{{ action.name }}",
                                  kwargs)
 
-        response = soup.find("u:{{ aname }}Response")
+        response = soup.find("u:{{ action.name }}Response")
         return self._parse_response(response)
         {% endfor %}
 {% endfor %}
